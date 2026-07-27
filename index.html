@@ -11,11 +11,9 @@
 <meta name="theme-color" content="#0f0c1d">
 <meta name="description" content="Compteur de points pour jeux de cartes et dés">
 
-<!-- Icône carte à jouer — encodée en SVG inline -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='10' fill='%230f0c1d'/><rect x='8' y='6' width='48' height='52' rx='7' fill='white' stroke='%23ddd' stroke-width='1'/><text x='13' y='21' font-family='Georgia,serif' font-size='13' font-weight='bold' fill='%23cc0000'>A</text><text x='10' y='32' font-family='Georgia,serif' font-size='11' fill='%23cc0000'>&#x2665;</text><text x='32' y='38' font-family='Georgia,serif' font-size='26' text-anchor='middle' fill='%23cc0000'>&#x2665;</text><text x='51' y='55' font-family='Georgia,serif' font-size='13' font-weight='bold' fill='%23cc0000' text-anchor='middle' transform='rotate(180 51 50)'>A</text></svg>">
-
-<!-- Apple touch icon (180×180 pour iPhone) -->
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='36' fill='%230f0c1d'/><rect x='16' y='12' width='148' height='156' rx='18' fill='white' stroke='%23e0e0e0' stroke-width='2'/><text x='28' y='52' font-family='Georgia,serif' font-size='36' font-weight='bold' fill='%23cc0000'>A</text><text x='26' y='82' font-family='Georgia,serif' font-size='30' fill='%23cc0000'>&#x2665;</text><text x='90' y='118' font-family='Georgia,serif' font-size='72' text-anchor='middle' fill='%23cc0000'>&#x2665;</text><text x='152' y='158' font-family='Georgia,serif' font-size='36' font-weight='bold' fill='%23cc0000' text-anchor='middle' transform='rotate(180 152 146)'>A</text></svg>">
+<!-- Icône générée dynamiquement via canvas — fonctionne sur tous les navigateurs -->
+<link rel="icon" id="favicon" type="image/png">
+<link rel="apple-touch-icon" id="apple-icon">
 
 <!-- PWA Manifest -->
 <link rel="manifest" href="data:application/manifest+json,{
@@ -34,6 +32,64 @@
     %22purpose%22:%22any%20maskable%22
   }]
 }">
+
+<script>
+// Génère l'icône carte à jouer via canvas — compatible tous navigateurs PC/mobile
+(function(){
+  function makeCardIcon(size){
+    const c=document.createElement('canvas');
+    c.width=c.height=size;
+    const x=c.getContext('2d');
+    const r=size*0.13; // corner radius background
+    // Fond sombre arrondi
+    x.beginPath();
+    x.moveTo(r,0);x.lineTo(size-r,0);x.quadraticCurveTo(size,0,size,r);
+    x.lineTo(size,size-r);x.quadraticCurveTo(size,size,size-r,size);
+    x.lineTo(r,size);x.quadraticCurveTo(0,size,0,size-r);
+    x.lineTo(0,r);x.quadraticCurveTo(0,0,r,0);x.closePath();
+    x.fillStyle='#0f0c1d';x.fill();
+    // Carte blanche
+    const m=size*0.10, cr=size*0.09;
+    x.beginPath();
+    x.moveTo(m+cr,m);x.lineTo(size-m-cr,m);x.quadraticCurveTo(size-m,m,size-m,m+cr);
+    x.lineTo(size-m,size-m-cr);x.quadraticCurveTo(size-m,size-m,size-m-cr,size-m);
+    x.lineTo(m+cr,size-m);x.quadraticCurveTo(m,size-m,m,size-m-cr);
+    x.lineTo(m,m+cr);x.quadraticCurveTo(m,m,m+cr,m);x.closePath();
+    x.fillStyle='#ffffff';x.fill();
+    x.strokeStyle='#cccccc';x.lineWidth=size*0.015;x.stroke();
+    // Texte rouge
+    x.fillStyle='#cc0000';
+    const fs=size*0.22;
+    x.font=`bold ${fs}px Georgia,serif`;
+    x.textAlign='left';
+    x.fillText('A',size*0.16,size*0.31);
+    // Petit cœur haut gauche
+    x.font=`${fs*0.75}px Georgia,serif`;
+    x.fillText('♥',size*0.14,size*0.47);
+    // Grand cœur central
+    x.font=`bold ${size*0.42}px Georgia,serif`;
+    x.textAlign='center';
+    x.fillText('♥',size*0.5,size*0.72);
+    // A retourné bas droite
+    x.save();
+    x.translate(size*0.84,size*0.84);
+    x.rotate(Math.PI);
+    x.font=`bold ${fs}px Georgia,serif`;
+    x.textAlign='center';
+    x.fillStyle='#cc0000';
+    x.fillText('A',0,0);
+    x.restore();
+    return c.toDataURL('image/png');
+  }
+  try{
+    const ico=makeCardIcon(64);
+    const big=makeCardIcon(180);
+    document.getElementById('favicon').href=ico;
+    document.getElementById('apple-icon').href=big;
+    document.getElementById('apple-icon').rel='apple-touch-icon';
+  }catch(e){}
+})();
+</script>
 
 <title>🃏 ScoreBoard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
