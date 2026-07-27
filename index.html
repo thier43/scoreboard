@@ -1404,11 +1404,17 @@ function closeScoreEdit(){
   sePlayerIdx=null; seRoundIdx=null; seMode=null;
 }
 function seStep(dir){
+  // Incrément immédiat au premier tap
   const inp=document.getElementById('se-input');
   inp.value=(parseInt(inp.value)||0)+dir;
-  seTimer=setInterval(()=>{inp.value=(parseInt(inp.value)||0)+dir;},120);
+  // Délai de 500ms avant que l'auto-répétition ne commence, puis toutes les 200ms
+  seTimer=setTimeout(()=>{
+    seTimer=setInterval(()=>{
+      inp.value=(parseInt(inp.value)||0)+dir;
+    },200);
+  },500);
 }
-function seStopStep(){clearInterval(seTimer);seTimer=null;}
+function seStopStep(){clearTimeout(seTimer);clearInterval(seTimer);seTimer=null;}
 function confirmScoreEdit(){
   if(sePlayerIdx===null||seRoundIdx===null) return;
   const newVal=parseInt(document.getElementById('se-input').value)||0;
