@@ -1968,12 +1968,18 @@ async function triggerInstall(){
 
 // Service Worker inline
 if('serviceWorker' in navigator && location.protocol!=='file:'){
-  const SW=`const C='sb-v1';
-self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.add(location.href)));self.skipWaiting();});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});
-self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;
+  const SW=`const C='sb-v3';
+self.addEventListener('install',e=>{self.skipWaiting();});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch',e=>{
+  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
+});`;
   const blob=new Blob([SW],{type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(blob),{scope:'./'}).catch(()=>{});
+  navigator.serviceWorker.register(URL.createObjectURL(blob),{scope:'./'})
+    .then(reg=>reg.update()).catch(()=>{});
 }
 </script>
 </body>
