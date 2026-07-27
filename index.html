@@ -11,9 +11,11 @@
 <meta name="theme-color" content="#0f0c1d">
 <meta name="description" content="Compteur de points pour jeux de cartes et dés">
 
-<!-- Icône générée dynamiquement via canvas — fonctionne sur tous les navigateurs -->
-<link rel="icon" id="favicon" type="image/png">
-<link rel="apple-touch-icon" id="apple-icon">
+<!-- Icône PNG base64 — compatible tous navigateurs (PC, mobile, tablette) -->
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+
+<!-- Script pour générer un favicon de secours si nécessaire -->
 
 <!-- PWA Manifest -->
 <link rel="manifest" href="data:application/manifest+json,{
@@ -33,63 +35,6 @@
   }]
 }">
 
-<script>
-// Génère l'icône carte à jouer via canvas — compatible tous navigateurs PC/mobile
-(function(){
-  function makeCardIcon(size){
-    const c=document.createElement('canvas');
-    c.width=c.height=size;
-    const x=c.getContext('2d');
-    const r=size*0.13; // corner radius background
-    // Fond sombre arrondi
-    x.beginPath();
-    x.moveTo(r,0);x.lineTo(size-r,0);x.quadraticCurveTo(size,0,size,r);
-    x.lineTo(size,size-r);x.quadraticCurveTo(size,size,size-r,size);
-    x.lineTo(r,size);x.quadraticCurveTo(0,size,0,size-r);
-    x.lineTo(0,r);x.quadraticCurveTo(0,0,r,0);x.closePath();
-    x.fillStyle='#0f0c1d';x.fill();
-    // Carte blanche
-    const m=size*0.10, cr=size*0.09;
-    x.beginPath();
-    x.moveTo(m+cr,m);x.lineTo(size-m-cr,m);x.quadraticCurveTo(size-m,m,size-m,m+cr);
-    x.lineTo(size-m,size-m-cr);x.quadraticCurveTo(size-m,size-m,size-m-cr,size-m);
-    x.lineTo(m+cr,size-m);x.quadraticCurveTo(m,size-m,m,size-m-cr);
-    x.lineTo(m,m+cr);x.quadraticCurveTo(m,m,m+cr,m);x.closePath();
-    x.fillStyle='#ffffff';x.fill();
-    x.strokeStyle='#cccccc';x.lineWidth=size*0.015;x.stroke();
-    // Texte rouge
-    x.fillStyle='#cc0000';
-    const fs=size*0.22;
-    x.font=`bold ${fs}px Georgia,serif`;
-    x.textAlign='left';
-    x.fillText('A',size*0.16,size*0.31);
-    // Petit cœur haut gauche
-    x.font=`${fs*0.75}px Georgia,serif`;
-    x.fillText('♥',size*0.14,size*0.47);
-    // Grand cœur central
-    x.font=`bold ${size*0.42}px Georgia,serif`;
-    x.textAlign='center';
-    x.fillText('♥',size*0.5,size*0.72);
-    // A retourné bas droite
-    x.save();
-    x.translate(size*0.84,size*0.84);
-    x.rotate(Math.PI);
-    x.font=`bold ${fs}px Georgia,serif`;
-    x.textAlign='center';
-    x.fillStyle='#cc0000';
-    x.fillText('A',0,0);
-    x.restore();
-    return c.toDataURL('image/png');
-  }
-  try{
-    const ico=makeCardIcon(64);
-    const big=makeCardIcon(180);
-    document.getElementById('favicon').href=ico;
-    document.getElementById('apple-icon').href=big;
-    document.getElementById('apple-icon').rel='apple-touch-icon';
-  }catch(e){}
-})();
-</script>
 
 <title>🃏 ScoreBoard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
