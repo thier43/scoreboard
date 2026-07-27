@@ -1339,7 +1339,6 @@ function confirmNextRound(){
 
 // ─── Score entry / edit modal ───
 let sePlayerIdx=null, seRoundIdx=null, seMode=null;
-let seTimer=null;
 
 // Build the quick numpad once
 function buildNumpad(){
@@ -1404,18 +1403,22 @@ function closeScoreEdit(){
   document.getElementById('score-edit-overlay').classList.remove('open');
   sePlayerIdx=null; seRoundIdx=null; seMode=null;
 }
+let seDelayTimer=null, seRepeatTimer=null;
 function seStep(dir){
-  // Incrément immédiat au premier tap
   const inp=document.getElementById('se-input');
+  // 1 — incrément immédiat au tap
   inp.value=(parseInt(inp.value)||0)+dir;
-  // Délai de 500ms avant que l'auto-répétition ne commence, puis toutes les 200ms
-  seTimer=setTimeout(()=>{
-    seTimer=setInterval(()=>{
+  // 2 — après 600ms de maintien, auto-répétition lente (250ms)
+  seDelayTimer=setTimeout(()=>{
+    seRepeatTimer=setInterval(()=>{
       inp.value=(parseInt(inp.value)||0)+dir;
-    },200);
-  },500);
+    },250);
+  },600);
 }
-function seStopStep(){clearTimeout(seTimer);clearInterval(seTimer);seTimer=null;}
+function seStopStep(){
+  clearTimeout(seDelayTimer);  seDelayTimer=null;
+  clearInterval(seRepeatTimer); seRepeatTimer=null;
+}
 function confirmScoreEdit(){
   if(sePlayerIdx===null||seRoundIdx===null) return;
   const newVal=parseInt(document.getElementById('se-input').value)||0;
@@ -1967,20 +1970,16 @@ async function triggerInstall(){
   document.getElementById('install-overlay').classList.remove('open');
 }
 
-// Service Worker inline
-if('serviceWorker' in navigator && location.protocol!=='file:'){
-  const SW=`const C='sb-v3';
-self.addEventListener('install',e=>{self.skipWaiting();});
-self.addEventListener('activate',e=>{
-  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))));
-  self.clients.claim();
-});
-self.addEventListener('fetch',e=>{
-  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
-});`;
-  const blob=new Blob([SW],{type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(blob),{scope:'./'})
-    .then(reg=>reg.update()).catch(()=>{});
+// Désactiver et supprimer tout Service Worker existant + vider les caches
+if('serviceWorker' in navigator){
+  // Désenregistrer tous les SW existants
+  navigator.serviceWorker.getRegistrations().then(regs=>{
+    regs.forEach(reg=>reg.unregister());
+  });
+  // Vider tous les caches
+  if(window.caches){
+    caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
+  }
 }
 </script>
 </body>
