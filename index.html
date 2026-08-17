@@ -481,6 +481,8 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--accent);}
 .mode-badge.min{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);}
 
 /* ── SCROLLBAR ── */
+.lang-btn{text-align:left;padding:12px 16px;font-size:.95rem;border-radius:10px;}
+.lang-btn.active{background:linear-gradient(135deg,rgba(247,201,72,.25),rgba(247,201,72,.1));color:var(--accent);border:1px solid rgba(247,201,72,.4);font-weight:800;}
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
@@ -544,6 +546,20 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--accent);}
       <button class="btn btn-ghost btn-sm" onclick="closeRoundConfirm()">✏️ Modifier</button>
       <button class="btn btn-primary btn-sm" onclick="confirmNextRound()">✔ Confirmer</button>
     </div>
+  </div>
+</div>
+
+<!-- LANGUE VOCALE MODAL -->
+<div class="confirm-overlay" id="lang-modal" style="z-index:650;">
+  <div class="confirm-box" style="max-width:320px;">
+    <h3 style="margin-bottom:16px;">🌐 Langue de la voix</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+      <button class="lang-btn wm-btn" data-lang="en" onclick="setVoiceLang('en');document.getElementById('lang-modal').classList.remove('open');">🇬🇧 English</button>
+      <button class="lang-btn wm-btn" data-lang="fr" onclick="setVoiceLang('fr');document.getElementById('lang-modal').classList.remove('open');">🇫🇷 Français</button>
+      <button class="lang-btn wm-btn" data-lang="es" onclick="setVoiceLang('es');document.getElementById('lang-modal').classList.remove('open');">🇪🇸 Español</button>
+      <button class="lang-btn wm-btn" data-lang="de" onclick="setVoiceLang('de');document.getElementById('lang-modal').classList.remove('open');">🇩🇪 Deutsch</button>
+    </div>
+    <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="document.getElementById('lang-modal').classList.remove('open')">Fermer</button>
   </div>
 </div>
 
@@ -673,6 +689,7 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--accent);}
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="round-badge">Round <span id="g-round">1</span></div>
       <button class="btn btn-home btn-sm" id="voice-btn" onclick="toggleVoice()" title="Activer/désactiver la voix">🔊</button>
+      <button class="btn btn-home btn-sm" onclick="openLangModal()" title="Langue de la voix">🌐</button>
       <button class="btn btn-home btn-sm" onclick="askGoHome()">🏠</button>
     </div>
   </div>
@@ -697,6 +714,7 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--accent);}
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-ghost btn-sm" onclick="undoLast()">↩ Annuler</button>
       <button class="btn btn-ghost btn-sm" onclick="nextRound()">➡ Round suiv.</button>
+      <button class="btn btn-ghost btn-sm" onclick="announceCurrentScores()" title="Lire les scores à voix haute">🔊 Scores</button>
     </div>
     <button class="btn btn-danger btn-sm" onclick="openFinale()">🏁 Fin</button>
   </div>
@@ -1701,55 +1719,119 @@ function renderStatsGames(){
 }
 
 // ═══════════════════════════════════════
-// VOICE (Web Speech API — English TTS)
+// VOICE — multilingue (EN / FR / ES / DE)
 // ═══════════════════════════════════════
 let voiceEnabled = localStorage.getItem('sb_voice') !== 'off';
-let enVoice = null;
+let voiceLang = localStorage.getItem('sb_voice_lang') || 'en';
+let currentVoice = null;
 let speechQueue = [];
 let isSpeaking = false;
 
-// Voice preference order: high-quality neural/enhanced EN voices first
-const PREFERRED_VOICES = [
-  'Samantha','Daniel','Karen','Moira',      // Apple enhanced
-  'Google UK English Female',
-  'Google UK English Male',
-  'Google US English',
-  'Microsoft Aria Online','Microsoft Guy Online',
-  'Microsoft Zira Desktop','Microsoft David Desktop',
-];
+// Textes par langue
+const VOICE_LANGS = {
+  en:{ code:'en-GB', label:'🇬🇧 English',
+    preferred:['Samantha','Daniel','Karen','Google UK English Female','Google UK English Male','Google US English','Microsoft Aria Online','Microsoft Guy Online','Microsoft Zira Desktop'],
+    plus:'plus', minus:'minus', zero:'zero', points:'point',
+    scoreAfter: r=>`Scores after round ${r}.`,
+    roundComplete: n=>`Round ${n} complete.`,
+    nextDealer: n=>`Next dealer: ${n}.`,
+    gameOver:'Game over! Here are the final results.',
+    places:['First place','Second place','Third place'],
+    lastPlace:'Last place',
+    congrats: n=>`Congratulations ${n}!`,
+    voiceOn:'Voice enabled.',
+    currentScores: r=>`Current scores, round ${r}.`,
+    ordinals:['First','Second','Third','Fourth','Fifth','Sixth','Seventh','Eighth'],
+  },
+  fr:{ code:'fr-FR', label:'🇫🇷 Français',
+    preferred:['Thomas','Amelie','Marie','Google français','Microsoft Paul Online','Microsoft Hortense Online'],
+    plus:'plus', minus:'moins', zero:'zéro', points:'point',
+    scoreAfter: r=>`Scores après le round ${r}.`,
+    roundComplete: n=>`Round ${n} terminé.`,
+    nextDealer: n=>`Prochain donneur : ${n}.`,
+    gameOver:'Fin de la partie ! Voici le classement.',
+    places:['Première place','Deuxième place','Troisième place'],
+    lastPlace:'Dernière place',
+    congrats: n=>`Félicitations ${n} !`,
+    voiceOn:'Voix activée.',
+    currentScores: r=>`Scores actuels, round ${r}.`,
+    ordinals:['Premier','Deuxième','Troisième','Quatrième','Cinquième','Sixième','Septième','Huitième'],
+  },
+  es:{ code:'es-ES', label:'🇪🇸 Español',
+    preferred:['Monica','Paulina','Google español','Microsoft Pablo Online','Microsoft Laura Online'],
+    plus:'más', minus:'menos', zero:'cero', points:'punto',
+    scoreAfter: r=>`Puntuaciones después de la ronda ${r}.`,
+    roundComplete: n=>`Ronda ${n} completada.`,
+    nextDealer: n=>`Siguiente repartidor: ${n}.`,
+    gameOver:'¡Fin del juego! Aquí están los resultados finales.',
+    places:['Primer lugar','Segundo lugar','Tercer lugar'],
+    lastPlace:'Último lugar',
+    congrats: n=>`¡Felicitaciones ${n}!`,
+    voiceOn:'Voz activada.',
+    currentScores: r=>`Puntuaciones actuales, ronda ${r}.`,
+    ordinals:['Primero','Segundo','Tercero','Cuarto','Quinto','Sexto','Séptimo','Octavo'],
+  },
+  de:{ code:'de-DE', label:'🇩🇪 Deutsch',
+    preferred:['Anna','Markus','Google Deutsch','Microsoft Hedda Online','Microsoft Stefan Online'],
+    plus:'plus', minus:'minus', zero:'null', points:'Punkt',
+    scoreAfter: r=>`Punkte nach Runde ${r}.`,
+    roundComplete: n=>`Runde ${n} abgeschlossen.`,
+    nextDealer: n=>`Nächster Geber: ${n}.`,
+    gameOver:'Spiel beendet! Hier sind die Ergebnisse.',
+    places:['Erster Platz','Zweiter Platz','Dritter Platz'],
+    lastPlace:'Letzter Platz',
+    congrats: n=>`Herzlichen Glückwunsch ${n}!`,
+    voiceOn:'Stimme aktiviert.',
+    currentScores: r=>`Aktuelle Punkte, Runde ${r}.`,
+    ordinals:['Erster','Zweiter','Dritter','Vierter','Fünfter','Sechster','Siebter','Achter'],
+  },
+};
+
+function getLang(){ return VOICE_LANGS[voiceLang] || VOICE_LANGS.en; }
 
 function initVoice(){
   if(!window.speechSynthesis) return;
   const load = () => {
     const voices = speechSynthesis.getVoices();
     if(!voices.length) return;
-
-    // 1. Try preferred names (best quality, usually neural)
-    for(const name of PREFERRED_VOICES){
-      const v = voices.find(v=>v.name===name);
-      if(v){ enVoice=v; return; }
-    }
-    // 2. Any local en-GB voice (tends to sound natural)
-    enVoice = voices.find(v=>v.lang==='en-GB' && v.localService)
-           || voices.find(v=>v.lang==='en-US' && v.localService)
-           || voices.find(v=>v.lang.startsWith('en-') && v.localService)
-           // 3. Any en voice (remote)
-           || voices.find(v=>v.lang.startsWith('en-'))
-           || voices[0] || null;
+    pickVoice(voices);
   };
   load();
   speechSynthesis.onvoiceschanged = load;
-  // Some browsers (iOS) need a slight delay
   setTimeout(load, 400);
+}
+
+function pickVoice(voices){
+  const lang = getLang();
+  // 1. Preferred names
+  for(const name of lang.preferred){
+    const v = voices.find(v=>v.name===name);
+    if(v){ currentVoice=v; return; }
+  }
+  // 2. Local voice matching lang code
+  currentVoice = voices.find(v=>v.lang===lang.code && v.localService)
+              || voices.find(v=>v.lang.startsWith(lang.code.slice(0,2)) && v.localService)
+              || voices.find(v=>v.lang===lang.code)
+              || voices.find(v=>v.lang.startsWith(lang.code.slice(0,2)))
+              || voices[0] || null;
+}
+
+function setVoiceLang(code){
+  voiceLang = code;
+  localStorage.setItem('sb_voice_lang', code);
+  speechSynthesis.cancel(); speechQueue=[]; isSpeaking=false;
+  const voices = speechSynthesis.getVoices();
+  if(voices.length) pickVoice(voices);
+  // Update selector UI
+  document.querySelectorAll('.lang-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.lang===code);
+  });
+  if(voiceEnabled) speak(getLang().voiceOn);
 }
 
 function speak(text, priority=false){
   if(!voiceEnabled || !window.speechSynthesis) return;
-  if(priority){
-    speechSynthesis.cancel();
-    speechQueue=[];
-    isSpeaking=false;
-  }
+  if(priority){ speechSynthesis.cancel(); speechQueue=[]; isSpeaking=false; }
   speechQueue.push(text);
   if(!isSpeaking) processQueue();
 }
@@ -1758,12 +1840,11 @@ function processQueue(){
   if(!speechQueue.length){ isSpeaking=false; return; }
   isSpeaking=true;
   const text=speechQueue.shift();
+  const lang=getLang();
   const utt=new SpeechSynthesisUtterance(text);
-  utt.lang='en-GB';
-  utt.rate=0.95;    // slightly slower = clearer for scores
-  utt.pitch=1.0;
-  utt.volume=1;
-  if(enVoice) utt.voice=enVoice;
+  utt.lang=lang.code;
+  utt.rate=0.95; utt.pitch=1.0; utt.volume=1;
+  if(currentVoice) utt.voice=currentVoice;
   utt.onend=()=>{ isSpeaking=false; processQueue(); };
   utt.onerror=()=>{ isSpeaking=false; processQueue(); };
   speechSynthesis.speak(utt);
@@ -1775,65 +1856,70 @@ function toggleVoice(){
   const btn=document.getElementById('voice-btn');
   btn.textContent=voiceEnabled?'🔊':'🔇';
   btn.style.color=voiceEnabled?'var(--accent3)':'var(--muted)';
-  if(voiceEnabled) speak('Voice enabled.');
+  if(voiceEnabled) speak(getLang().voiceOn);
   else { speechSynthesis.cancel(); speechQueue=[]; isSpeaking=false; }
 }
 
-// Speak a numeric score naturally in English
 function spokenScore(val){
-  if(val===0) return 'zero';
-  const abs=Math.abs(val);
-  return (val>0 ? 'plus ' : 'minus ') + abs;
+  const lang=getLang();
+  if(val===0) return lang.zero;
+  return (val>0 ? lang.plus : lang.minus) + ' ' + Math.abs(val);
 }
 
-// Individual score announcement: "Thierry — plus five"
 function announceScore(playerName, score){
   speak(`${playerName}... ${spokenScore(score)}`);
 }
 
-// Round-end announcement: richer, with a short pause before dealer info
 function announceRoundEnd(roundNum, newDealerName){
-  speak(`Round ${roundNum} complete.`, true);
-  // small gap then dealer
-  setTimeout(()=>speak(`Next dealer: ${newDealerName}.`), 400);
+  const lang=getLang();
+  speak(lang.roundComplete(roundNum), true);
+  setTimeout(()=>speak(lang.nextDealer(newDealerName)), 400);
 }
 
-// Full podium announcement with dramatic build-up
 function announcePodium(sorted){
-  speechSynthesis.cancel();
-  speechQueue=[];
-  isSpeaking=false;
-
-  const lines=[];
-  lines.push('Game over! Here are the final results.');
-
-  const ordinals=['First place','Second place','Third place'];
+  speechSynthesis.cancel(); speechQueue=[]; isSpeaking=false;
+  const lang=getLang();
+  const lines=[lang.gameOver];
   sorted.slice(0,3).forEach((p,i)=>{
     const total=p.scores ? p.scores.reduce((a,b)=>a+b,0) : p.total;
     const pts=Math.abs(total);
-    lines.push(`${ordinals[i]}: ${p.name}, with ${spokenScore(total)} point${pts!==1?'s':''}.`);
+    lines.push(`${lang.places[i]}: ${p.name}, ${spokenScore(total)} ${lang.points}${pts!==1&&lang.code.startsWith('en')?'s':''}.`);
   });
-
   if(sorted.length>3){
     const last=sorted[sorted.length-1];
     const lt=last.scores ? last.scores.reduce((a,b)=>a+b,0) : last.total;
     const pts=Math.abs(lt);
-    lines.push(`Last place: ${last.name}, with ${spokenScore(lt)} point${pts!==1?'s':''}.`);
+    lines.push(`${lang.lastPlace}: ${last.name}, ${spokenScore(lt)} ${lang.points}${pts!==1&&lang.code.startsWith('en')?'s':''}.`);
   }
-
-  // Winner special callout
-  const winner=sorted[0];
-  const wt=winner.scores ? winner.scores.reduce((a,b)=>a+b,0) : winner.total;
-  lines.push(`Congratulations ${winner.name}!`);
-
+  lines.push(lang.congrats(sorted[0].name));
   lines.forEach(l=>speak(l));
 }
 
-// ═══════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════
-function ls(key,val){localStorage.setItem(key,JSON.stringify(val));}
+function announceCurrentScores(){
+  if(!voiceEnabled){ showToast('🔇 Activez la voix d\'abord'); return; }
+  const lang=getLang();
+  const sorted=getSortedPlayers();
+  speechSynthesis.cancel(); speechQueue=[]; isSpeaking=false;
+  speak(lang.currentScores(state.round), true);
+  sorted.forEach((p,i)=>{
+    const total=p.scores.reduce((a,b)=>a+b,0);
+    const pts=Math.abs(total);
+    speak(`${lang.ordinals[i]||i+1}: ${p.name}, ${spokenScore(total)} ${lang.points}${pts!==1&&lang.code.startsWith('en')?'s':''}.`);
+  });
+}
+
+// Ouvre la modale de sélection de langue vocale
+function openLangModal(){
+  const lang=getLang();
+  const modal=document.getElementById('lang-modal');
+  // Marquer la langue active
+  modal.querySelectorAll('.lang-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.lang===voiceLang);
+  });
+  modal.classList.add('open');
+}
 let toastTimer=null,toastGreenTimer=null;
+function ls(key,val){localStorage.setItem(key,JSON.stringify(val));}
 function showToast(msg,type=''){
   const t=document.getElementById('toast');
   t.textContent=msg;t.className='toast'+(type?' '+type:'');
