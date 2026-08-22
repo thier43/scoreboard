@@ -1369,9 +1369,26 @@ function closeRoundConfirm(){
 function confirmNextRound(){
   closeRoundConfirm();
   const isFree = state.dealerMode === 'free';
-  const finishedRound=state.round;
+  const finishedRound = state.round;
   saveHistory();
   state.round++;
+
+  // Vérifier le score limite EN PREMIER — avant toute annonce
+  if(state.scoreLimit){
+    const busted=state.players.filter(p=>p.scores.reduce((a,b)=>a+b,0)>=state.scoreLimit);
+    if(busted.length){
+      // Stop immédiat — pas d'annonce donneur, pas de toast round suivant
+      speechSynthesis.cancel && speechSynthesis.cancel();
+      speechQueue=[]; isSpeaking=false;
+      renderGame();
+      const names=busted.map(p=>p.name).join(', ');
+      showToast(`🛑 ${names} atteint ${state.scoreLimit} pts — Fin de partie !`);
+      setTimeout(()=>openFinale(), 1000);
+      return; // ← court-circuit total
+    }
+  }
+
+  // Pas de limite atteinte — comportement normal
   if(!isFree){
     const nextDealer=state.players[(state.dealerIndex+1)%state.players.length];
     state.dealerIndex=(state.dealerIndex+1)%state.players.length;
@@ -1383,23 +1400,6 @@ function confirmNextRound(){
     showToast(`✅ Tour ${finishedRound} terminé !`,'green');
     speak(getLang().roundComplete(finishedRound), true);
   }
-  // Vérifier si un joueur a atteint le score limite
-  setTimeout(()=>checkScoreLimit(), 800);
-}
-
-function checkScoreLimit(){
-  if(!state.scoreLimit) return;
-  const limit=state.scoreLimit;
-  // Chercher les joueurs ayant atteint ou dépassé la limite
-  const busted=state.players.filter(p=>{
-    const total=p.scores.reduce((a,b)=>a+b,0);
-    return total>=limit;
-  });
-  if(!busted.length) return;
-  // Fin automatique !
-  const names=busted.map(p=>p.name).join(', ');
-  showToast(`🛑 ${names} atteint ${limit} pts — Fin de partie !`,'');
-  setTimeout(()=>openFinale(), 1200);
 }
 
 // ─── Score entry / edit modal ───
