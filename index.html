@@ -1104,11 +1104,17 @@ function renderGnDD(){
     const name=typeof g==='string'?g:g.name;
     const mode=typeof g==='string'?'max':g.winMode||'max';
     const dm=typeof g==='string'?'dealer':g.dealerMode||'dealer';
-    const modeIcon=mode==='min'?'⬇️':'⬆️';
-    const dmIcon=dm==='free'?'🔄':'🃏';
-    return`<div class="gn-dd-item">
-      <span onclick="pickGame(${i})" style="flex:1">🎮 ${name} <span style="font-size:.7rem;color:var(--muted)">${modeIcon} ${dmIcon}</span></span>
-      <span class="gn-dd-del" onclick="deleteGame(${i})">✕</span>
+    const sl=g.scoreLimit||null;
+    const modeLabel=mode==='min'?'⬇️ min':'⬆️ max';
+    const dmLabel=dm==='free'?'🔄 libre':'🃏 donneur';
+    const slLabel=sl?`🛑 ${sl}`:'';
+    const tags=[modeLabel,dmLabel,slLabel].filter(Boolean).join(' · ');
+    return`<div class="gn-dd-item" style="flex-direction:column;align-items:flex-start;gap:2px;padding:10px 14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+        <span onclick="pickGame(${i})" style="flex:1;font-weight:800;font-size:.95rem;">🎮 ${name}</span>
+        <span class="gn-dd-del" onclick="event.stopPropagation();deleteGame(${i})">✕</span>
+      </div>
+      <div onclick="pickGame(${i})" style="font-size:.72rem;color:var(--muted);cursor:pointer;">${tags}</div>
     </div>`;
   }).join('');
 }
@@ -1118,10 +1124,14 @@ function pickGame(i){
   const mode=typeof g==='string'?'max':g.winMode||'max';
   const dm=typeof g==='string'?'dealer':g.dealerMode||'dealer';
   const sl=g.scoreLimit||'';
+  // Remplir tous les champs automatiquement
   document.getElementById('game-name').value=name;
   document.getElementById('score-limit').value=sl;
-  setWinMode(mode);setDealerMode(dm);
+  setWinMode(mode);
+  setDealerMode(dm);
   document.getElementById('gn-dd').classList.remove('open');
+  // Feedback visuel
+  showToast(`🎮 "${name}" chargé`,'green');
 }
 function deleteGame(i){savedGames.splice(i,1);ls('sb_games',savedGames);renderGnDD();}
 function saveGameName(name,winMode,dealerMode,scoreLimit){
