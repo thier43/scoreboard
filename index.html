@@ -1910,7 +1910,8 @@ function toggleVoice(){
 function spokenScore(val){
   const lang=getLang();
   if(val===0) return lang.zero;
-  return (val>0 ? lang.plus : lang.minus) + ' ' + Math.abs(val);
+  if(val>0) return String(val);
+  return lang.minus+' '+Math.abs(val);
 }
 
 function announceScore(playerName, score){
