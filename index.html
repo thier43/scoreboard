@@ -657,6 +657,14 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--accent);}
         </button>
       </div>
     </div>
+    <div class="field">
+      <label>🛑 Score limite <span style="font-weight:400;color:var(--muted)">(optionnel — fin auto quand un joueur l'atteint)</span></label>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="number" id="score-limit" placeholder="ex: 100" min="1" max="9999"
+          style="width:120px;flex-shrink:0;" value="">
+        <span style="font-size:.8rem;color:var(--muted);">Laisser vide = pas de limite</span>
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -688,6 +696,7 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--accent);}
     <div class="game-title" id="g-title"></div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="round-badge">Round <span id="g-round">1</span></div>
+      <div id="score-limit-badge" class="round-badge" style="display:none;color:var(--accent4);border-color:rgba(240,90,90,.3);"></div>
       <button class="btn btn-home btn-sm" id="voice-btn" onclick="toggleVoice()" title="Activer/désactiver la voix">🔊</button>
       <button class="btn btn-home btn-sm" onclick="openLangModal()" title="Langue de la voix">🌐</button>
       <button class="btn btn-home btn-sm" onclick="askGoHome()">🏠</button>
@@ -832,8 +841,12 @@ window.onload = () => {
       state = JSON.parse(inProgress);
       state.winMode = state.winMode||'max';
       state.dealerMode = state.dealerMode||'dealer';
+      state.scoreLimit = state.scoreLimit||null;
       document.getElementById('nav-game').style.display='flex';
       document.getElementById('dealer-strip').style.display=state.dealerMode==='dealer'?'flex':'none';
+      const slBadge=document.getElementById('score-limit-badge');
+      if(state.scoreLimit){slBadge.textContent=`🛑 Limite : ${state.scoreLimit}`;slBadge.style.display='inline-flex';}
+      else{slBadge.style.display='none';}
       // restore mode badge
       const mb=document.getElementById('g-mode-badge');
       mb.className='mode-badge '+state.winMode;
@@ -1104,19 +1117,20 @@ function pickGame(i){
   const name=typeof g==='string'?g:g.name;
   const mode=typeof g==='string'?'max':g.winMode||'max';
   const dm=typeof g==='string'?'dealer':g.dealerMode||'dealer';
+  const sl=g.scoreLimit||'';
   document.getElementById('game-name').value=name;
-  setWinMode(mode);
-  setDealerMode(dm);
+  document.getElementById('score-limit').value=sl;
+  setWinMode(mode);setDealerMode(dm);
   document.getElementById('gn-dd').classList.remove('open');
 }
 function deleteGame(i){savedGames.splice(i,1);ls('sb_games',savedGames);renderGnDD();}
-function saveGameName(name,winMode,dealerMode){
+function saveGameName(name,winMode,dealerMode,scoreLimit){
   if(!name)return;
   savedGames=savedGames.filter(g=>{
     const n=typeof g==='string'?g:g.name;
     return n.toLowerCase()!==name.toLowerCase();
   });
-  savedGames.unshift({name,winMode,dealerMode});
+  savedGames.unshift({name,winMode,dealerMode,scoreLimit:scoreLimit||null});
   if(savedGames.length>25)savedGames.pop();
   ls('sb_games',savedGames);
 }
@@ -1167,6 +1181,8 @@ function startGame(){
   const gameName=document.getElementById('game-name').value.trim()||'Partie sans nom';
   const winMode=getWinMode();
   const dealerMode=getDealerMode();
+  const scoreLimitRaw=document.getElementById('score-limit').value.trim();
+  const scoreLimit=scoreLimitRaw ? parseInt(scoreLimitRaw) : null;
   const rows=[...document.querySelectorAll('.player-row')];
   const players=rows.map((r,pos)=>{
     const idx=parseInt(r.dataset.idx);
@@ -1196,8 +1212,8 @@ function startGame(){
     return;
   }
 
-  state={gameName,winMode,dealerMode,players,dealerIndex:0,round:1,history:[]};
-  savePlayers();saveGameName(gameName,winMode,dealerMode);renderSavedList();
+  state={gameName,winMode,dealerMode,scoreLimit,players,dealerIndex:0,round:1,history:[]};
+  savePlayers();saveGameName(gameName,winMode,dealerMode,scoreLimit);renderSavedList();
   ls('sb_current_game',state);
   document.getElementById('g-title').textContent='🎮 '+gameName;
   // mode badge
@@ -1206,6 +1222,10 @@ function startGame(){
   mb.textContent=winMode==='min'?'⬇️ Moins de points gagne':'⬆️ Plus de points gagne';
   // dealer strip visibility
   document.getElementById('dealer-strip').style.display=dealerMode==='dealer'?'flex':'none';
+  // Badge score limite
+  const slBadge=document.getElementById('score-limit-badge');
+  if(scoreLimit){slBadge.textContent=`🛑 Limite : ${scoreLimit}`;slBadge.style.display='inline-flex';}
+  else{slBadge.style.display='none';}
   document.getElementById('nav-game').style.display='flex';
   showMainScreen('screen-game');
   renderGame();
@@ -1351,8 +1371,25 @@ function confirmNextRound(){
   } else {
     renderGame();
     showToast(`✅ Tour ${finishedRound} terminé !`,'green');
-    speak(`Round ${finishedRound} complete.`, true);
+    speak(getLang().roundComplete(finishedRound), true);
   }
+  // Vérifier si un joueur a atteint le score limite
+  setTimeout(()=>checkScoreLimit(), 800);
+}
+
+function checkScoreLimit(){
+  if(!state.scoreLimit) return;
+  const limit=state.scoreLimit;
+  // Chercher les joueurs ayant atteint ou dépassé la limite
+  const busted=state.players.filter(p=>{
+    const total=p.scores.reduce((a,b)=>a+b,0);
+    return total>=limit;
+  });
+  if(!busted.length) return;
+  // Fin automatique !
+  const names=busted.map(p=>p.name).join(', ');
+  showToast(`🛑 ${names} atteint ${limit} pts — Fin de partie !`,'');
+  setTimeout(()=>openFinale(), 1200);
 }
 
 // ─── Score entry / edit modal ───
