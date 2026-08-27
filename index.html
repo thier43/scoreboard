@@ -1362,9 +1362,22 @@ function openRoundConfirm(){
     </div>`;
   }).join('');
   document.getElementById('round-confirm-overlay').classList.add('open');
+  // Lire les scores à voix haute dès l'ouverture
+  if(voiceEnabled){
+    speechSynthesis.cancel&&speechSynthesis.cancel();
+    speechQueue=[]; isSpeaking=false;
+    const lang=getLang();
+    speak(`${lang.roundComplete(state.round)}`, true);
+    sorted.forEach(p=>{
+      const s=p.scores[state.round-1];
+      speak(`${p.name}... ${spokenScore(s)}`);
+    });
+  }
 }
 function closeRoundConfirm(){
   document.getElementById('round-confirm-overlay').classList.remove('open');
+  speechSynthesis.cancel&&speechSynthesis.cancel();
+  speechQueue=[]; isSpeaking=false;
 }
 function confirmNextRound(){
   closeRoundConfirm();
