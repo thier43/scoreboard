@@ -240,97 +240,108 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--accent);}
 .score-table{width:100%;max-width:700px;border-radius:var(--rad);
   border:1px solid rgba(255,255,255,.07);overflow:hidden;}
 
-/* Header + data rows — 8-col grid
-   # | Joueur | Total | − | Pts(large) | + | (gap) | OK */
+/* Grille : # | Joueur+historique | Total | Saisir */
 .score-row-header,
 .score-row{
   display:grid;
-  grid-template-columns:26px minmax(0,1fr) 44px 36px 60px 36px 6px 44px;
+  grid-template-columns:36px minmax(0,1fr) 64px 1fr;
   align-items:center;
-  padding:0 5px;
-  gap:3px;
+  padding:0 8px;
+  gap:6px;
 }
 .score-row-header{
-  height:30px;background:var(--surface);
+  height:34px;background:var(--surface);
   border-bottom:1px solid rgba(255,255,255,.1);
-  font-size:.58rem;text-transform:uppercase;letter-spacing:.3px;
+  font-size:.65rem;text-transform:uppercase;letter-spacing:.3px;
   color:var(--muted);font-weight:700;
 }
 .score-row-header>*{text-align:center;}
 .score-row-header>*:nth-child(2){text-align:left;}
-.score-row-header>*:last-child{text-align:center;}
 
-.score-row{height:50px;border-bottom:1px solid rgba(255,255,255,.05);}
+/* Hauteur dynamique selon nb joueurs — max 8, utilise l'espace dispo */
+.score-row{
+  min-height:56px;
+  height:calc((100dvh - 220px) / var(--player-count, 4));
+  max-height:96px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
 .score-row:last-child{border-bottom:none;}
-.score-row.rank-1 {background:rgba(34,197,94,.12); border-left:3px solid var(--r1);}
-.score-row.rank-2 {background:rgba(132,204,22,.08);border-left:3px solid var(--r2);}
-.score-row.rank-3 {background:rgba(234,179,8,.08); border-left:3px solid var(--r3);}
-.score-row.rank-last{background:rgba(239,68,68,.08);border-left:3px solid var(--rl);}
-.score-row.rank-mid {background:var(--surface);border-left:3px solid transparent;}
+.score-row.rank-1 {background:rgba(34,197,94,.12); border-left:4px solid var(--r1);}
+.score-row.rank-2 {background:rgba(132,204,22,.08);border-left:4px solid var(--r2);}
+.score-row.rank-3 {background:rgba(234,179,8,.08); border-left:4px solid var(--r3);}
+.score-row.rank-last{background:rgba(239,68,68,.08);border-left:4px solid var(--rl);}
+.score-row.rank-mid {background:var(--surface);border-left:4px solid transparent;}
 
-.rank-num{font-family:'Boogaloo',cursive;font-size:.92rem;color:var(--muted);text-align:center;}
+.rank-num{font-family:'Boogaloo',cursive;font-size:1.2rem;color:var(--muted);text-align:center;}
 .rank-num.r1{color:var(--gold);}.rank-num.r2{color:var(--silver);}.rank-num.r3{color:var(--bronze);}
-.player-info{display:flex;align-items:center;gap:5px;overflow:hidden;min-width:0;}
+.player-info{display:flex;align-items:center;gap:8px;overflow:hidden;min-width:0;}
 
-/* mini card */
-.score-card{width:20px;height:30px;border-radius:3px;background:#fff;
+/* carte plus grande */
+.score-card{width:28px;height:40px;border-radius:4px;background:#fff;
   display:flex;align-items:center;justify-content:center;
-  font-size:.78rem;font-weight:900;color:var(--card-color,#e00);
-  flex-shrink:0;box-shadow:1px 2px 4px rgba(0,0,0,.5);position:relative;}
+  font-size:1.05rem;font-weight:900;color:var(--card-color,#e00);
+  flex-shrink:0;box-shadow:1px 2px 5px rgba(0,0,0,.5);position:relative;}
 .score-card::before,.score-card::after{content:attr(data-suit);position:absolute;
-  font-size:.26rem;line-height:1;color:var(--card-color,#e00);font-weight:900;}
-.score-card::before{top:1px;left:1px;}
-.score-card::after{bottom:1px;right:1px;transform:rotate(180deg);}
-.player-name-cell{font-weight:800;font-size:.8rem;white-space:nowrap;
+  font-size:.32rem;line-height:1;color:var(--card-color,#e00);font-weight:900;}
+.score-card::before{top:2px;left:2px;}
+.score-card::after{bottom:2px;right:2px;transform:rotate(180deg);}
+
+.player-name-cell{font-weight:800;font-size:1rem;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;min-width:0;}
-.dealer-icon{font-size:.48rem;background:var(--accent2);color:#fff;border-radius:2px;
-  padding:1px 3px;margin-left:2px;font-family:'Nunito',sans-serif;vertical-align:middle;}
-.score-history{font-size:.54rem;color:var(--muted);}
-.score-total{font-family:'Boogaloo',cursive;font-size:1.2rem;text-align:center;}
+.dealer-icon{font-size:.55rem;background:var(--accent2);color:#fff;border-radius:2px;
+  padding:1px 4px;margin-left:3px;font-family:'Nunito',sans-serif;vertical-align:middle;}
+.score-history{font-size:.6rem;color:var(--muted);display:flex;gap:3px;flex-wrap:wrap;margin-top:2px;}
+
+/* Total — grand et lisible */
+.score-total{font-family:'Boogaloo',cursive;font-size:1.6rem;text-align:center;font-weight:900;}
 .score-total.pos{color:var(--r1);}.score-total.neg{color:var(--rl);}.score-total.zero{color:var(--muted);}
 
-/* Spin buttons — fill their grid cell */
-.spin-btn{
-  width:100%;height:38px;
-  background:var(--surface2);
-  border:1px solid rgba(255,255,255,.14);color:var(--text);
-  font-size:1.25rem;font-weight:900;line-height:1;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:background .1s;user-select:none;touch-action:manipulation;
-}
-.spin-minus{border-radius:7px 0 0 7px;}
-.spin-plus{border-radius:0 7px 7px 0;}
-/* OK — standalone button, separated by the gap column */
+/* Bouton Saisir — prend toute la hauteur de la ligne */
 .spin-ok{
-  width:100%;height:38px;
+  width:100%;height:100%;min-height:44px;
   background:var(--accent);color:#1a1000;
-  border:1px solid var(--accent);
-  font-family:'Boogaloo',cursive;font-size:.95rem;font-weight:900;
-  border-radius:7px;touch-action:manipulation;letter-spacing:.2px;
+  border:none;
+  font-family:'Boogaloo',cursive;font-size:1.1rem;font-weight:900;
+  border-radius:8px;touch-action:manipulation;letter-spacing:.3px;
+  display:flex;align-items:center;justify-content:center;
 }
-.spin-btn:hover{background:rgba(247,201,72,.2);}.spin-ok:hover{background:#e8a500;}
-.spin-btn:active{transform:scale(.93);}
-.score-num-input{
-  width:100%;height:38px;
-  background:var(--surface2);
-  border:1px solid rgba(255,255,255,.14);border-left:none;border-right:none;
-  color:var(--text);font-family:'Boogaloo',cursive;font-size:.95rem;
-  text-align:center;outline:none;-webkit-appearance:none;
-}
-.score-num-input:focus{background:rgba(247,201,72,.08);}
+.spin-ok:hover{background:#e8a500;}
+.spin-ok:active{transform:scale(.96);}
 
-/* Validated chip — clickable to edit, spans last 5 columns (−,Pts,+,gap,OK) */
+/* Chip validé — même hauteur */
 .score-validated{
-  display:flex;align-items:center;justify-content:center;gap:5px;
-  height:38px;grid-column:span 5;
-  background:rgba(34,197,94,.1);border-radius:7px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  height:100%;min-height:44px;
+  background:rgba(34,197,94,.1);border-radius:8px;
   border:1px solid rgba(34,197,94,.25);
   cursor:pointer;transition:background .15s;
 }
 .score-validated:hover{background:rgba(34,197,94,.2);}
-.score-validated-icon{font-size:.95rem;}
-.score-validated-val{font-family:'Boogaloo',cursive;color:var(--r1);font-size:.95rem;}
-.score-validated-edit{font-size:.65rem;color:var(--muted);margin-left:2px;}
+.score-validated-icon{font-size:1.1rem;}
+.score-validated-val{font-family:'Boogaloo',cursive;color:var(--r1);font-size:1.3rem;font-weight:900;}
+.score-validated-edit{font-size:.7rem;color:var(--muted);}
+
+/* Spin buttons (dans modale) */
+.spin-btn{
+  width:100%;height:48px;
+  background:var(--surface2);
+  border:1px solid rgba(255,255,255,.14);color:var(--text);
+  font-size:1.4rem;font-weight:900;line-height:1;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background .1s;user-select:none;touch-action:manipulation;
+}
+.spin-minus{border-radius:10px 0 0 10px;}
+.spin-plus{border-radius:0 10px 10px 0;}
+.spin-btn:hover{background:rgba(247,201,72,.2);}
+.spin-btn:active{transform:scale(.93);}
+.score-num-input{
+  width:100%;height:48px;
+  background:var(--surface2);
+  border:1px solid rgba(255,255,255,.14);border-left:none;border-right:none;
+  color:var(--text);font-family:'Boogaloo',cursive;font-size:1.1rem;
+  text-align:center;outline:none;-webkit-appearance:none;
+}
+.score-num-input:focus{background:rgba(247,201,72,.08);}
 
 /* actions bar — sticky bottom */
 .actions-bar{
@@ -715,7 +726,7 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--accent);}
       <div>#</div>
       <div>Joueur</div>
       <div>Total</div>
-      <div style="grid-column:span 5;text-align:center;">Score du round</div>
+      <div style="text-align:center;">Score du round</div>
     </div>
     <div id="score-rows"></div>
   </div>
@@ -1264,6 +1275,10 @@ function renderGame(){
   const ordered = state.players.map((p,i)=>({...p,originalIndex:i}));
   const n = ordered.length;
 
+  // Hauteur dynamique des lignes selon le nombre de joueurs
+  const tbl=document.querySelector('.score-table');
+  if(tbl) tbl.style.setProperty('--player-count', n);
+
   // Compute rank positions (for color coding) from sorted scores — separate from display order
   const rankMap = getRankMap();
 
@@ -1279,28 +1294,23 @@ function renderGame(){
     const tc=total>0?'pos':total<0?'neg':'zero';
     const card=p.card||DEFAULT_CARDS[0];
 
-    // Score for current round (undefined if not yet entered)
     const roundScore = p.scores[state.round-1];
     const scoredThisRound = roundScore !== undefined;
 
-    // What to show in the last 5 columns
     const scoreCtrl = scoredThisRound
       ? `<div class="score-validated" onclick="openScoreEntry(${p.originalIndex})" title="Modifier">
            <span class="score-validated-icon">✅</span>
            <span class="score-validated-val">${roundScore>=0?'+':''}${roundScore}</span>
            <span class="score-validated-edit">✏️</span>
          </div>`
-      : `<button class="spin-btn spin-ok"
-           style="grid-column:span 5;border-radius:7px;font-size:1rem;letter-spacing:.3px;"
-           onclick="openScoreEntry(${p.originalIndex})">✎ Saisir</button>`;
+      : `<button class="spin-ok" onclick="openScoreEntry(${p.originalIndex})">✎ Saisir</button>`;
 
-    // Past rounds shown as compact clickable dots (no Rx label to save space)
     const histBadges = p.scores.slice(0, state.round-1).map((s,ri)=>
       `<span onclick="openScoreEdit(${p.originalIndex},${ri},'past')"
-        style="cursor:pointer;padding:1px 4px;border-radius:3px;
+        style="cursor:pointer;padding:2px 5px;border-radius:4px;
         background:rgba(255,255,255,.07);
         color:${s>0?'var(--r1)':s<0?'var(--rl)':'var(--muted)'};
-        font-size:.52rem;border:1px solid rgba(255,255,255,.08);" title="Tour ${ri+1}: modifier">
+        font-size:.6rem;border:1px solid rgba(255,255,255,.1);" title="Tour ${ri+1}: modifier">
         ${s>=0?'+':''}${s}✏</span>`).join('');
 
     return`<div class="score-row ${rc}">
@@ -1309,7 +1319,7 @@ function renderGame(){
         <div class="score-card" data-suit="${card.suit}" style="--card-color:${card.col}">${card.em}</div>
         <div style="min-width:0">
           <div class="player-name-cell">${p.name}${isD?'<span class="dealer-icon">🃏</span>':''}</div>
-          <div class="score-history" style="display:flex;gap:2px;flex-wrap:wrap;">${histBadges}</div>
+          <div class="score-history">${histBadges}</div>
         </div>
       </div>
       <div class="score-total ${tc}">${total>=0?'+':''}${total}</div>
