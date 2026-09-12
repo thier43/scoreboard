@@ -518,19 +518,19 @@ input[type=text]:focus,input[type=number]:focus{border-color:var(--accent);}
       </div>
     </div>
 
-    <!-- Big score display -->
+    <!-- Affichage du score — pas d'input = pas de clavier système -->
     <div style="display:flex;align-items:center;justify-content:center;gap:0;margin:16px 0 14px;">
       <button class="spin-btn" style="width:56px;height:56px;border-radius:10px 0 0 10px;font-size:1.8rem;flex-shrink:0;"
-        onmousedown="seStep(-1)" onmouseup="seStopStep()" onmouseleave="seStopStep()"
-        ontouchstart="event.preventDefault();seStep(-1)" ontouchend="seStopStep()" ontouchcancel="seStopStep()">−</button>
-      <input type="number" id="se-input"
+        ontouchstart="event.preventDefault();seStep(-1)" ontouchend="seStopStep()" ontouchcancel="seStopStep()"
+        onmousedown="seStep(-1)" onmouseup="seStopStep()" onmouseleave="seStopStep()">−</button>
+      <div id="se-display"
         style="flex:1;height:56px;background:var(--surface2);
         border:1px solid rgba(255,255,255,.14);border-left:none;border-right:none;
         color:var(--text);font-family:'Boogaloo',cursive;font-size:2rem;
-        text-align:center;outline:none;-webkit-appearance:none;min-width:0;" value="0">
+        text-align:center;line-height:56px;min-width:0;user-select:none;">0</div>
       <button class="spin-btn" style="width:56px;height:56px;border-radius:0 10px 10px 0;font-size:1.8rem;flex-shrink:0;border-right:1px solid rgba(255,255,255,.14);"
-        onmousedown="seStep(1)" onmouseup="seStopStep()" onmouseleave="seStopStep()"
-        ontouchstart="event.preventDefault();seStep(1)" ontouchend="seStopStep()" ontouchcancel="seStopStep()">+</button>
+        ontouchstart="event.preventDefault();seStep(1)" ontouchend="seStopStep()" ontouchcancel="seStopStep()"
+        onmousedown="seStep(1)" onmouseup="seStopStep()" onmouseleave="seStopStep()">+</button>
     </div>
 
     <!-- Quick numpad — méthode principale sur mobile -->
@@ -1427,12 +1427,22 @@ function confirmNextRound(){
 
 // ─── Score entry / edit modal ───
 let sePlayerIdx=null, seRoundIdx=null, seMode=null;
+let seValue=0; // valeur courante — pas d'input, pas de clavier
+
+function seGetVal(){ return seValue; }
+function seSetVal(v){
+  seValue = isNaN(parseInt(v)) ? 0 : parseInt(v);
+  const d=document.getElementById('se-display');
+  if(d){
+    d.textContent = seValue>=0 ? String(seValue) : '−'+Math.abs(seValue);
+    d.style.color = seValue<0 ? 'var(--rl)' : seValue===0 ? 'var(--muted)' : 'var(--accent3)';
+  }
+}
 
 // Build the quick numpad once
 function buildNumpad(){
   const pad=document.getElementById('se-numpad');
   if(!pad||pad.children.length) return;
-  // Keys: 1-9, ±(toggle sign), 0, ⌫
   const keys=['1','2','3','4','5','6','7','8','9','±','0','⌫'];
   keys.forEach(k=>{
     const btn=document.createElement('button');
@@ -1443,84 +1453,78 @@ function buildNumpad(){
     if(k==='⌫') btn.style.background='rgba(239,68,68,.15)';
     if(k==='±') btn.style.background='rgba(247,201,72,.12)';
     btn.addEventListener('click',()=>{
-      const inp=document.getElementById('se-input');
-      let v=inp.value;
-      if(k==='⌫'){ inp.value=v.length>1?v.slice(0,-1):'0'; }
-      else if(k==='±'){ inp.value=(-(parseInt(v)||0)).toString(); }
-      else { inp.value=(v==='0'||v==='-0')?k:(v==='-'?'-'+k:v+k); }
+      const cur=String(Math.abs(seValue));
+      const neg=seValue<0;
+      if(k==='⌫'){
+        const s=cur.length>1?cur.slice(0,-1):'0';
+        seSetVal(neg?-parseInt(s):parseInt(s));
+      } else if(k==='±'){
+        seSetVal(-seValue);
+      } else {
+        const s=cur==='0'?k:cur+k;
+        seSetVal(neg?-parseInt(s):parseInt(s));
+      }
     });
     pad.appendChild(btn);
   });
 }
 
-// Open for NEW score entry (current round)
 function openScoreEntry(playerIdx){
   sePlayerIdx=playerIdx; seRoundIdx=state.round-1; seMode='entry';
   const p=state.players[playerIdx];
-  _populateScoreModal(p, `Round ${state.round}`, 0);
+  const isFree=state.dealerMode==='free';
+  _populateScoreModal(p,`${isFree?'Tour':'Round'} ${state.round}`,0);
   document.getElementById('score-edit-overlay').classList.add('open');
-  setTimeout(()=>document.getElementById('se-input').select(),100);
 }
 
-// Open for EDIT (current round validated, or past round)
-function openScoreEdit(playerIdx, roundIdx, type){
+function openScoreEdit(playerIdx,roundIdx,type){
   sePlayerIdx=playerIdx; seRoundIdx=roundIdx; seMode='edit';
   const p=state.players[playerIdx];
   const cur=p.scores[roundIdx]??0;
   const isFree=state.dealerMode==='free';
-  _populateScoreModal(p, `${isFree?'Tour':'Round'} ${roundIdx+1} — modifier`, cur);
+  _populateScoreModal(p,`${isFree?'Tour':'Round'} ${roundIdx+1} — modifier`,cur);
   document.getElementById('score-edit-overlay').classList.add('open');
-  setTimeout(()=>document.getElementById('se-input').select(),100);
 }
 
-function _populateScoreModal(p, subtitle, value){
+function _populateScoreModal(p,subtitle,value){
   buildNumpad();
   const card=p.card||DEFAULT_CARDS[0];
-  // Card
   const cardEl=document.getElementById('se-card');
   cardEl.textContent=card.em;
   cardEl.style.color=card.col;
   cardEl.style.setProperty('--card-color',card.col);
-  // Name & subtitle
   document.getElementById('se-name').textContent=p.name;
   document.getElementById('se-subtitle').textContent=subtitle;
-  document.getElementById('se-input').value=value;
+  seSetVal(value); // Met à jour l'affichage sans input
 }
 
 function closeScoreEdit(){
   document.getElementById('score-edit-overlay').classList.remove('open');
   sePlayerIdx=null; seRoundIdx=null; seMode=null;
 }
+
 let seDelayTimer=null, seRepeatTimer=null;
 function seStep(dir){
-  // Stopper tout timer en cours avant d'en démarrer un nouveau
   seStopStep();
-  const inp=document.getElementById('se-input');
-  // 1 — incrément immédiat au tap
-  inp.value=(parseInt(inp.value)||0)+dir;
-  // 2 — après 600ms de maintien, auto-répétition lente (250ms)
+  seSetVal(seValue+dir);
   seDelayTimer=setTimeout(()=>{
-    seRepeatTimer=setInterval(()=>{
-      inp.value=(parseInt(inp.value)||0)+dir;
-    },250);
+    seRepeatTimer=setInterval(()=>{ seSetVal(seValue+dir); },250);
   },600);
 }
 function seStopStep(){
-  clearTimeout(seDelayTimer);  seDelayTimer=null;
+  clearTimeout(seDelayTimer); seDelayTimer=null;
   clearInterval(seRepeatTimer); seRepeatTimer=null;
 }
+
 function confirmScoreEdit(){
   if(sePlayerIdx===null||seRoundIdx===null) return;
-  const newVal=parseInt(document.getElementById('se-input').value)||0;
+  const newVal=seGetVal();
   saveHistory();
-  // Always assign by index — works for both new entry and edit
   state.players[sePlayerIdx].scores[seRoundIdx]=newVal;
   closeScoreEdit();
   renderGame();
-
   if(seMode==='entry'){
-    announceScore(state.players[sePlayerIdx].name, newVal);
-    // All scored = every player has a defined (non-undefined) score for this round
+    announceScore(state.players[sePlayerIdx].name,newVal);
     const allScored=state.players.every(p=>p.scores[state.round-1]!==undefined);
     if(allScored){
       const advanceRound=()=>openRoundConfirm();
